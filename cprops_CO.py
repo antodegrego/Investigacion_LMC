@@ -5,7 +5,7 @@ from spectral_cube import SpectralCube
 
 
 cubefile = 'NMolR_aca_12CO21_K_cube.fits' #Your cube
-mask = 'NMolR_aca_image_v3_12CO21_mask_rms_fix.fits' # Mask defining where to find emission
+mask = 'NMolR_aca_mosaic_12CO21_contsub_masked.fits' # Mask defining where to find emission
 d = 50.0 * u.kpc           # Distance (with units)
 
 
