@@ -14,7 +14,7 @@ valor_negativo = -1e6
 #Aplicamos una mascara
 mask =  (data12 > 0) & (data13 > 0) & np.isfinite(data12) & np.isfinite(data13)
 ratio = np.where(mask, data13/data12, valor_negativo)
-ratio[data12==0] = np.nan
+ratio[data12==0] = valor_negativo #np.nan
 
 # asegurar que sea 2D
 ratio = np.squeeze(ratio)
