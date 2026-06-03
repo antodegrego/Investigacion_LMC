@@ -11,8 +11,13 @@ header = hdu12[0].header
 # Valor muy negativo para los píxeles que no cumplen
 valor_negativo = -1e6
 
+# definir una región de ruido
+noise_region = data13[846:902,317:440]
+rms_mom0 = np.nanstd(noise_region)
+
 #Aplicamos una mascara
-mask =  (data12 > 0) & (data13 > 0) & np.isfinite(data12) & np.isfinite(data13)
+mask =  np.isfinite(data13) & (data13 > 0) #& (data12 > 0) & np.isfinite(data12)
+mask = (data13 > 3*rms_mom0) & np.isfinite(data13) & np.isfinite(data12) 
 ratio = np.where(mask, data13/data12, valor_negativo)
 ratio[data12==0] = valor_negativo #np.nan
 
@@ -35,7 +40,7 @@ print(np.nanmin(ratio))
 print(np.nanmax(ratio))
 
 fits.writeto(
-    r"C:\Users\adegr\OneDrive\Escritorio\Bibliografía Magister\Investigacion_LMC\ratio_13CO21_12CO21.fits",
+    r"C:\Users\adegr\OneDrive\Escritorio\Bibliografía Magister\Investigacion_LMC\NMoIR_ratio_13CO21_12CO21_13mask_only.fits",
     ratio,
     header,
     overwrite=True)
@@ -49,7 +54,8 @@ plt.title("Line Ratio Map (13CO(2-1)/12CO(2-1))")
 plt.show()
 
 #################################
-#Graficar cociente entre 13CO y 12CO
+#Graficar cociente entre 13C
+# O y 12CO
 ###################################
 
 import matplotlib.pyplot as plt
@@ -59,8 +65,12 @@ import numpy as np
 data12 = np.squeeze(data12)
 data13 = np.squeeze(data13)
 
+
+
 # máscara más estricta (recomendado)
 mask = (data12 > 0) & (data13 > 0) & np.isfinite(data12) & np.isfinite(data13)
+mask = (data13 > 0) & np.isfinite(data13)
+mask = (data13 > 3*rms_mom0) & np.isfinite(data13) & np.isfinite(data12) 
 
 # extraer valores válidos
 co12 = data12[mask]
