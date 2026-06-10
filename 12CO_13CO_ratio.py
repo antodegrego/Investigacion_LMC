@@ -67,10 +67,11 @@ data13 = np.squeeze(data13)
 
 
 
-# máscara más estricta (recomendado)
-mask = (data12 > 0) & (data13 > 0) & np.isfinite(data12) & np.isfinite(data13)
-mask = (data13 > 0) & np.isfinite(data13)
+# máscara
+#mask = (data12 > 0) & (data13 > 0) & np.isfinite(data12) & np.isfinite(data13)
+#mask = (data13 > 0) & np.isfinite(data13)
 mask = (data13 > 3*rms_mom0) & np.isfinite(data13) & np.isfinite(data12) 
+
 
 # extraer valores válidos
 co12 = data12[mask]
@@ -80,9 +81,9 @@ co13 = data13[mask]
 plt.figure(figsize=(6,6))
 plt.scatter(co12, co13, s=1, alpha=0.3)
 
-plt.xlabel("12CO(2-1)")
-plt.ylabel("13CO(2-1)")
-plt.title("13CO vs 12CO")
+plt.xlabel("Intensidad 12CO(2-1) [K km s-1]")
+plt.ylabel("Intensidad 13CO(2-1) [K km s-1]")
+plt.title("Intensidad 13CO(2-1) vs  Intensidad 12CO(2-1)")
 
 # límites de ejes
 plt.xlim(-0.5, np.max(co12))
@@ -93,4 +94,29 @@ plt.ylim(-0.5, np.max(co13))
 #plt.yscale("log")
 
 plt.grid(True, which="both", ls="--", alpha=0.5)
+plt.show()
+
+# Fiteo a los datos del scatter plot
+coef = np.polyfit(co12, co13, 2)
+
+a, b, c = coef
+
+xfit = np.linspace(np.min(co12), np.max(co12), 1000)
+yfit = np.polyval(coef, xfit)
+
+plt.figure(figsize=(6,6))
+plt.scatter(co12, co13, s=1, alpha=0.3)
+
+plt.plot(
+    xfit,
+    yfit,
+    'r',
+    lw=2,
+    label = (fr"$y={a:.5f}x^2+{b:.5f}x+{c:.3f}$")#fr"$y={a:.3e}x^2+{b:.3e}x+{c:.3e}$"
+)
+
+plt.legend()
+plt.xlabel("Intensidad 12CO(2-1) [K km s$^{-1}$]")
+plt.ylabel("Intensidad 13CO(2-1) [K km s$^{-1}$]")
+plt.grid(alpha=0.5)
 plt.show()
