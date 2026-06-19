@@ -106,3 +106,14 @@ hdu=1
 print(tabla.colnames)
 
 print(tabla[:10])
+
+
+import pandas as pd
+
+# Leer archivo
+df = pd.read_csv(r"C:\Users\adegr\OneDrive\Escritorio\Bibliografía Magister\Investigacion_LMC\NMoIR_12CO21.props.csv")
+
+# Seleccionar columnas de interés
+tabla = df[["CLOUDNUM", "RAD_PC", "SIGV_KMS"]]
+
+print(tabla)

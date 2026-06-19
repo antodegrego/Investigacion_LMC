@@ -96,10 +96,13 @@ plt.ylim(-0.5, np.max(co13))
 plt.grid(True, which="both", ls="--", alpha=0.5)
 plt.show()
 
-# Fiteo a los datos del scatter plot
-coef = np.polyfit(co12, co13, 2)
+#Pesos para ajuste ponderado para resultado lineal
+weights = co12**2
 
-a, b, c = coef
+# Fiteo a los datos del scatter plot
+coef = np.polyfit(co12, co13, 1, w=weights)
+
+m, b = coef
 
 xfit = np.linspace(np.min(co12), np.max(co12), 1000)
 yfit = np.polyval(coef, xfit)
@@ -112,7 +115,7 @@ plt.plot(
     yfit,
     'r',
     lw=2,
-    label = (fr"$y={a:.5f}x^2+{b:.5f}x+{c:.3f}$")#fr"$y={a:.3e}x^2+{b:.3e}x+{c:.3e}$"
+    label = fr"$y={m:.5f}x+{b:.5f}$" #(fr"$y={a:.5f}x^2+{b:.5f}x+{c:.3f}$")#fr"$y={a:.3e}x^2+{b:.3e}x+{c:.3e}$"
 )
 
 plt.legend()

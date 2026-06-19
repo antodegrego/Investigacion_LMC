@@ -1,140 +1,224 @@
 from astropy.io import fits
 import numpy as np
 import matplotlib.pyplot as plt
-from reproject import reproject_interp
-from astropy.convolution import convolve, Gaussian2DKernel
 
-#########################################
-# CARGAR DATOS
-#########################################
-hdu_co = fits.open(r"C:\Users\adegr\OneDrive\Escritorio\Bibliografía Magister\Investigacion_LMC\moment0_12CO21.fits")
-hdu_cii = fits.open(r"C:\Users\adegr\OneDrive\Escritorio\Bibliografía Magister\Investigacion_LMC\line_flux_CII.fits")
+####################################
+# Cargar mapas
+####################################
 
-data_ciii = np.squeeze(hdu_cii[0].data)
-data_co   = np.squeeze(hdu_co[0].data)
+cii_hdu = fits.open(r"C:\Users\adegr\OneDrive\Escritorio\Bibliografía Magister\Investigacion_LMC\line_flux_CII.fits")
+co12_hdu = fits.open(r"C:\Users\adegr\OneDrive\Escritorio\Bibliografía Magister\Investigacion_LMC\NMoIR_12CO_reprojected.fits")
+co13_hdu = fits.open(r"C:\Users\adegr\OneDrive\Escritorio\Bibliografía Magister\Investigacion_LMC\NMoIR_13CO_reprojected.fits")
 
-header_cii = hdu_cii[0].header
+cii = np.squeeze(cii_hdu[0].data)
+co12 = np.squeeze(co12_hdu[0].data)
+co13 = np.squeeze(co13_hdu[0].data)
 
-#########################################
-# ESTIMAR RESOLUCIONES
-#########################################
+header = cii_hdu[0].header.copy()
 
-# tamaño de píxel en grados → arcsec
-beam_co  = hdu_co[0].header["BMAJ"] * 3600  # en arcsec
-beam_cii = abs(header_cii["CDELT1"]) * 3600  # aproximación
+####################################
+# Región de ruido para 13CO
+####################################
 
-print("Beam CO:", beam_co)
-print("Beam CII (approx):", beam_cii)
+# Ajustar índices según tu mapa
+noise_region = co13[50:100,50:100]
 
-#########################################
-# convertir FWHM → sigma
-#########################################
+rms_13 = np.nanstd(noise_region)
 
-sigma_co  = beam_co  / 2.355
-sigma_cii = beam_cii / 2.355
+print("RMS 13CO =", rms_13)
 
-#########################################
-# kernel
-#########################################
+####################################
+# Máscara común
+####################################
 
-sigma_kernel = np.sqrt(max(0, sigma_cii**2 - sigma_co**2))
-
-print("Sigma kernel:", sigma_kernel)
-
-#########################################
-# convertir a píxeles del mapa CO
-#########################################
-
-pix_co = abs(hdu_co[0].header["CDELT1"]) * 3600  # arcsec/pixel
-
-sigma_pix = sigma_kernel / pix_co
-
-kernel = Gaussian2DKernel(sigma_pix)
-
-if sigma_kernel > 0:
-    sigma_pix = sigma_kernel / pix_co
-    kernel = Gaussian2DKernel(sigma_pix)
-    data_co_smooth = convolve(data_co, kernel)
-else:
-    print("No se necesita convolución")
-    data_co_smooth = data_co
-
-#########################################
-# SUAVIZAR CO
-#########################################
-
-data_co_smooth = convolve(data_co, kernel)
-
-#########################################
-# REPROYECTAR CO → GRILLA DE CIII
-#########################################
-
-co_reproj, footprint = reproject_interp(
-    (data_co_smooth, hdu_co[0].header),
-    header_cii
+mask = (
+    (co13 > 3*rms_13)
+    & np.isfinite(co13)
+    & np.isfinite(co12)
+    & np.isfinite(cii)
+    & (co12 > 0)
+    & (cii > 0)
 )
 
-#########################################
-# FUNCIÓN DE CORRELACIÓN LOCAL
-#########################################
+print("Pixeles válidos:", np.sum(mask))
 
-def local_correlation(map1, map2, size=7):
-    pad = size // 2
-    corr_map = np.full(map1.shape, np.nan)
+####################################
+# Mapas de razón
+####################################
 
-    for i in range(pad, map1.shape[0] - pad):
-        for j in range(pad, map1.shape[1] - pad):
+valor_negativo = -1e6
 
-            sub1 = map1[i-pad:i+pad+1, j-pad:j+pad+1]
-            sub2 = map2[i-pad:i+pad+1, j-pad:j+pad+1]
+ratio_co12_cii = np.where(
+    mask,
+    co12/cii,
+    valor_negativo
+)
 
-            mask = (
-                np.isfinite(sub1) &
-                np.isfinite(sub2)
-            )
+ratio_co13_cii = np.where(
+    mask,
+    co13/cii,
+    valor_negativo
+)
 
-            if np.sum(mask) > 5:
-                x = sub1[mask]
-                y = sub2[mask]
+####################################
+# Guardar mapas
+####################################
 
-                if np.std(x) > 0 and np.std(y) > 0:
-                    corr_map[i, j] = np.corrcoef(x, y)[0, 1]
-
-    return corr_map
-
-#########################################
-# CALCULAR MAPA DE CORRELACIÓN
-#########################################
-
-corr_map = local_correlation(data_ciii, co_reproj, size=7)
-
-#########################################
-# GUARDAR RESULTADO
-#########################################
+header12 = header.copy()
+header12["BUNIT"] = "12CO/CII"
 
 fits.writeto(
-    "correlation_map_CII_12CO.fits",
-    corr_map,
-    header_cii,
+    r"C:\Users\adegr\OneDrive\Escritorio\Bibliografía Magister\Investigacion_LMC\NMoIR_ratio_12CO_CII.fits",
+    ratio_co12_cii,
+    header12,
     overwrite=True
 )
 
-#########################################
-# VISUALIZACIÓN
-#########################################
+header13 = header.copy()
+header13["BUNIT"] = "13CO/CII"
 
-plt.figure(figsize=(6,8))
-
-im = plt.imshow(
-    corr_map,
-    origin="lower",
-    cmap="coolwarm",
-    vmin=-1,
-    vmax=1
+fits.writeto(
+    r"C:\Users\adegr\OneDrive\Escritorio\Bibliografía Magister\Investigacion_LMC\NMoIR_ratio_13CO_CII.fits",
+    ratio_co13_cii,
+    header13,
+    overwrite=True
 )
 
-plt.colorbar(im, label="Pearson correlation")
-plt.title("Spatial Correlation Map: CII vs 12CO")
+####################################
+# Mostrar mapas
+####################################
 
-plt.tight_layout()
+#plt.figure(figsize=(8,6))
+#plt.imshow(
+#    ratio_cii_co12,
+#    origin="lower",
+#    cmap="inferno"
+#)
+#plt.colorbar(label="[CII]/12CO")
+#plt.title("[CII]/12CO")
+#plt.show()
+
+#plt.figure(figsize=(8,6))
+#plt.imshow(
+#    ratio_cii_co13,
+#    origin="lower",
+#    cmap="inferno"
+#)
+#plt.colorbar(label="[CII]/13CO")
+#plt.title("[CII]/13CO")
+#plt.show()
+
+####################################
+# Scatter [CII] vs 12CO
+####################################
+
+co12_valid = co12[mask]
+co13_valid = co13[mask]
+cii_valid = cii[mask]
+
+plt.figure(figsize=(6,6))
+
+plt.scatter(
+    cii_valid,
+    co12_valid,
+    s=2,
+    alpha=0.3
+)
+
+plt.xlabel(r"$^{12}$CO [W m$^{-2}$ sr$^{-1}$]")
+plt.ylabel(r"[CII] [W m$^{-2}$ sr$^{-1}$]")
+
+plt.xscale("log")
+plt.yscale("log")
+
+plt.grid(alpha=0.5)
+
+####################################
+# Fiteo
+####################################
+
+coef12 = np.polyfit(
+    np.log10(cii_valid),
+    np.log10(co12_valid),
+    1
+)
+
+m12, b12 = coef12
+
+xfit = np.linspace(
+    np.min(np.log10(cii_valid)),
+    np.max(np.log10(cii_valid)),
+    1000
+)
+
+yfit = m12*xfit + b12
+
+plt.plot(
+    10**xfit,
+    10**yfit,
+    'r',
+    lw=2,
+    label=fr'$\log(\mathrm{{CII}})={m12:.3f}\log(\mathrm{{CO}})+{b12:.3f}$'
+)
+
+plt.legend()
 plt.show()
+
+####################################
+# Scatter [CII] vs 13CO
+####################################
+
+plt.figure(figsize=(6,6))
+
+plt.scatter(
+    cii_valid,
+    co13_valid,
+    s=2,
+    alpha=0.3
+)
+
+plt.xlabel(r"$^{13}$CO [W m$^{-2}$ sr$^{-1}$]")
+plt.ylabel(r"[CII] [W m$^{-2}$ sr$^{-1}$]")
+
+plt.xscale("log")
+plt.yscale("log")
+
+plt.grid(alpha=0.5)
+
+coef13 = np.polyfit(
+    np.log10(cii_valid),
+    np.log10(co13_valid),
+    1
+)
+
+m13, b13 = coef13
+
+xfit = np.linspace(
+    np.min(np.log10(cii_valid)),
+    np.max(np.log10(cii_valid)),
+    1000
+)
+
+yfit = m13*xfit + b13
+
+plt.plot(
+    10**xfit,
+    10**yfit,
+    'r',
+    lw=2,
+    label=fr'$\log(\mathrm{{CII}})={m13:.3f}\log(\mathrm{{CO}})+{b13:.3f}$'
+)
+
+plt.legend()
+plt.show()
+
+####################################
+# Razones globales
+####################################
+
+R12 = np.nansum(co12_valid) / np.nansum(cii_valid)
+R13 = np.nansum(co13_valid) / np.nansum(cii_valid)
+
+print()
+print("12CO/[CII] =", R12)
+print("13CO/[CII] =", R13)
