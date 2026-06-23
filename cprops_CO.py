@@ -3,6 +3,8 @@ import astropy.units as u
 import os
 from spectral_cube import SpectralCube
 
+# Permitir operaciones grandes
+SpectralCube.allow_huge_operations = True
 
 cubefile = 'NMolR_aca_12CO21_K_cube.fits' #Your cube
 mask = 'NMolR_aca_13CO21_mask_3sigma.fits' # Mask defining where to find emission
