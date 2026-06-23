@@ -1,7 +1,7 @@
 from astropy.io import fits
 import numpy as np
 
-cubefile = 'NMolR_aca_12CO21_K_cube.fits'
+cubefile = 'NMolR_aca_13CO21_K_cube.fits'
 
 # abrir cubo original
 hdul = fits.open(cubefile)
@@ -13,7 +13,7 @@ header = hdul[0].header
 noise_data = np.full(data.shape, 0.2, dtype=np.float32)
 
 fits.writeto(
-    r"C:\Users\adegr\OneDrive\Escritorio\Bibliografía Magister\Investigacion_LMC\noise_cube12.fits",
+    r"C:\Users\adegr\OneDrive\Escritorio\Bibliografía Magister\Investigacion_LMC\noise_cube13.fits",
     noise_data,
     header,
     overwrite=True
