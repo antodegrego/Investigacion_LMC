@@ -20,7 +20,7 @@ wcs = WCS(header)
 # Leer catálogo
 # -----------------------
 cat = pd.read_csv(
-    r"C:\Users\adegr\OneDrive\Escritorio\Bibliografía Magister\Investigacion_LMC\NMoIR_12CO21.props.csv"
+    r"C:\Users\adegr\OneDrive\Escritorio\Bibliografía Magister\Investigacion_LMC\NMoIR_12CO21_mask13CO.props.csv"
 )
 
 # -----------------------
