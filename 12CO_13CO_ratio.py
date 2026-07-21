@@ -1,5 +1,6 @@
 from astropy.io import fits
 import numpy as np
+from scipy.ndimage import zoom
 
 hdu12 = fits.open(r"C:\Users\adegr\OneDrive\Escritorio\Bibliografía Magister\Investigacion_LMC\moment0_12CO21.fits")
 hdu13 = fits.open(r"C:\Users\adegr\OneDrive\Escritorio\Bibliografía Magister\Investigacion_LMC\moment0_13CO21.fits")
@@ -7,6 +8,7 @@ hdu13 = fits.open(r"C:\Users\adegr\OneDrive\Escritorio\Bibliografía Magister\In
 data12 = hdu12[0].data
 data13 = hdu13[0].data
 header = hdu12[0].header
+
 
 # Valor muy negativo para los píxeles que no cumplen
 valor_negativo = -1e6
@@ -21,6 +23,26 @@ mask = (data13 > 3*rms_mom0) & np.isfinite(data13) & np.isfinite(data12)
 ratio = np.where(mask, data13/data12, valor_negativo)
 ratio[data12==0] = valor_negativo #np.nan
 
+# Rebinning para evitar oversalpling
+factor = 2/7
+
+data13_rebin = zoom(data13, factor, order=1)
+data12_rebin = zoom(data12, factor, order=1)
+
+# La misma región de ruido, escalada
+y0, y1 = int(846*factor), int(902*factor)
+x0, x1 = int(317*factor), int(440*factor)
+
+noise_region = data13_rebin[y0:y1, x0:x1]
+
+rms_rebin = np.nanstd(noise_region)
+
+print(rms_rebin)
+
+mask = (data13_rebin > 3*rms_rebin) & np.isfinite(data13_rebin) & np.isfinite(data12_rebin) 
+ratio = np.where(mask, data13_rebin/data12_rebin, valor_negativo)
+ratio[data12_rebin==0] = valor_negativo #np.nan
+
 # asegurar que sea 2D
 ratio = np.squeeze(ratio)
 
@@ -28,11 +50,14 @@ ratio = np.squeeze(ratio)
 header["NAXIS"] = 2
 header["NAXIS1"] = ratio.shape[1]
 header["NAXIS2"] = ratio.shape[0]
+header["CDELT1"] /= factor
+header["CDELT2"] /= factor
 
 # eliminar keywords de ejes extra si existen
 for key in ["NAXIS3","CTYPE3","CRVAL3","CRPIX3","CDELT3","CUNIT3"]:
     if key in header:
         del header[key]
+
 
 print(ratio.shape)
 print(hdu12[0].header["NAXIS"])
@@ -40,7 +65,7 @@ print(np.nanmin(ratio))
 print(np.nanmax(ratio))
 
 fits.writeto(
-    r"C:\Users\adegr\OneDrive\Escritorio\Bibliografía Magister\Investigacion_LMC\NMoIR_ratio_13CO21_12CO21_13mask_only.fits",
+    r"C:\Users\adegr\OneDrive\Escritorio\Bibliografía Magister\Investigacion_LMC\NMoIR_ratio_13CO21_12CO21_13mask_only_rebinned.fits",
     ratio,
     header,
     overwrite=True)
@@ -65,12 +90,20 @@ import numpy as np
 data12 = np.squeeze(data12)
 data13 = np.squeeze(data13)
 
+data12 = zoom(data12, factor, order=1)
+data13 = zoom(data13, factor, order=1)
 
 
 # máscara
 #mask = (data12 > 0) & (data13 > 0) & np.isfinite(data12) & np.isfinite(data13)
 #mask = (data13 > 0) & np.isfinite(data13)
 mask = (data13 > 3*rms_mom0) & np.isfinite(data13) & np.isfinite(data12) 
+
+mask = (
+    (data13 > 3*rms_rebin) &
+    np.isfinite(data12) &
+    np.isfinite(data13)
+)
 
 
 # extraer valores válidos
@@ -100,7 +133,7 @@ plt.show()
 weights = co12**2
 
 # Fiteo a los datos del scatter plot
-coef = np.polyfit(co12, co13, 1, w=weights)
+coef = np.polyfit(co12, co13, 1)
 
 m, b = coef
 

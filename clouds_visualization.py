@@ -24,6 +24,13 @@ cat = pd.read_csv(
 )
 
 # -----------------------
+# Número inicial de nubes
+# -----------------------
+nubes_inicial = len(cat)
+
+print(f"Número inicial de nubes: {nubes_inicial}")
+
+# -----------------------
 # Eliminar radios NaN
 # -----------------------
 cat = cat[np.isfinite(cat["RAD_PC"])]
