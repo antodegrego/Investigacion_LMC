@@ -7,8 +7,8 @@ import matplotlib.pyplot as plt
 ####################################
 
 cii_hdu = fits.open(r"C:\Users\adegr\OneDrive\Escritorio\Bibliografía Magister\Investigacion_LMC\line_flux_CII.fits")
-co12_hdu = fits.open(r"C:\Users\adegr\OneDrive\Escritorio\Bibliografía Magister\Investigacion_LMC\NMoIR_12CO_reprojected.fits")
-co13_hdu = fits.open(r"C:\Users\adegr\OneDrive\Escritorio\Bibliografía Magister\Investigacion_LMC\NMoIR_13CO_reprojected.fits")
+co12_hdu = fits.open(r"C:\Users\adegr\OneDrive\Escritorio\Bibliografía Magister\Investigacion_LMC\NMoIR_12CO_15p3arcsec_Wm2sr_reprojected.fits")
+co13_hdu = fits.open(r"C:\Users\adegr\OneDrive\Escritorio\Bibliografía Magister\Investigacion_LMC\NMoIR_13CO_15p3arcsec_Wm2sr_reprojected.fits")
 
 cii = np.squeeze(cii_hdu[0].data)
 co12 = np.squeeze(co12_hdu[0].data)
@@ -68,7 +68,7 @@ header12 = header.copy()
 header12["BUNIT"] = "12CO/CII"
 
 fits.writeto(
-    r"C:\Users\adegr\OneDrive\Escritorio\Bibliografía Magister\Investigacion_LMC\NMoIR_ratio_12CO_CII.fits",
+    r"C:\Users\adegr\OneDrive\Escritorio\Bibliografía Magister\Investigacion_LMC\NMoIR_ratio_12CO_CII_v2.fits",
     ratio_co12_cii,
     header12,
     overwrite=True
@@ -78,7 +78,7 @@ header13 = header.copy()
 header13["BUNIT"] = "13CO/CII"
 
 fits.writeto(
-    r"C:\Users\adegr\OneDrive\Escritorio\Bibliografía Magister\Investigacion_LMC\NMoIR_ratio_13CO_CII.fits",
+    r"C:\Users\adegr\OneDrive\Escritorio\Bibliografía Magister\Investigacion_LMC\NMoIR_ratio_13CO_CII_v2.fits",
     ratio_co13_cii,
     header13,
     overwrite=True
