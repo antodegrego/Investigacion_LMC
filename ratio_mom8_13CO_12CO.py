@@ -15,6 +15,17 @@ hdu13 = fits.open(
     r"C:\Users\adegr\OneDrive\Escritorio\Bibliografía Magister\Investigacion_LMC\moment8_13CO21.fits"
 )
 
+hdu12_m0 = fits.open(
+    r"C:\Users\adegr\OneDrive\Escritorio\Bibliografía Magister\Investigacion_LMC\moment0_12CO21.fits"
+)
+
+hdu13_m0 = fits.open(
+    r"C:\Users\adegr\OneDrive\Escritorio\Bibliografía Magister\Investigacion_LMC\moment0_13CO21.fits"
+)
+
+mom0_12 = np.squeeze(hdu12_m0[0].data)
+mom0_13 = np.squeeze(hdu13_m0[0].data)
+
 data12 = np.squeeze(hdu12[0].data)
 data13 = np.squeeze(hdu13[0].data)
 
@@ -27,9 +38,12 @@ valor_negativo = -1e6
 # ==========================================================
 
 factor = 2/7
+factor = 1
 
 data12 = zoom(data12, factor, order=1)
 data13 = zoom(data13, factor, order=1)
+mom0_12 = zoom(mom0_12, factor, order=1)
+mom0_13 = zoom(mom0_13, factor, order=1)
 
 # ==========================================================
 # Calcular RMS del mapa rebineado
@@ -44,15 +58,30 @@ rms = np.nanstd(noise_region)
 
 print(f"RMS = {rms:.5f}")
 
+noise_region_12 = mom0_12[y0:y1, x0:x1]
+noise_region_13 = mom0_13[y0:y1, x0:x1]
+
+rms_mom0_12 = np.nanstd(noise_region_12)
+rms_mom0_13 = np.nanstd(noise_region_13)
+
 # ==========================================================
 # Máscara
 # ==========================================================
+
+mask_emission = (
+    (mom0_12 > 3*rms_mom0_12) &
+    (mom0_13 > 3*rms_mom0_13) &
+    np.isfinite(mom0_12) &
+    np.isfinite(mom0_13)
+)
 
 mask = (
     (data13 > 3*rms) &
     np.isfinite(data12) &
     np.isfinite(data13) &
-    (data12 != 0)
+    (data12 != 0) &
+    (data12 > 3*rms) &
+    mask_emission
 )
 
 # ==========================================================
@@ -62,6 +91,9 @@ mask = (
 ratio = np.full(data12.shape, valor_negativo, dtype=float)
 
 ratio[mask] = data13[mask]/data12[mask]
+
+#ratio = np.where(mask, data13/data12, valor_negativo)
+#ratio[data12==0] = valor_negativo #np.nan
 
 # ==========================================================
 # Actualizar header
@@ -86,7 +118,7 @@ for key in [
 # ==========================================================
 
 fits.writeto(
-    r"C:\Users\adegr\OneDrive\Escritorio\Bibliografía Magister\Investigacion_LMC\NMoIR_ratio_M8_13CO21_12CO21_rebinned.fits",
+    r"C:\Users\adegr\OneDrive\Escritorio\Bibliografía Magister\Investigacion_LMC\NMoIR_ratio_M8_13CO21_12CO21.fits",
     ratio,
     header,
     overwrite=True

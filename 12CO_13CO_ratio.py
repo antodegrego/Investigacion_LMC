@@ -70,7 +70,7 @@ print(np.nanmin(ratio))
 print(np.nanmax(ratio))
 
 fits.writeto(
-    r"C:\Users\adegr\OneDrive\Escritorio\Bibliografía Magister\Investigacion_LMC\NMoIR_ratio_13CO21_12CO21_13mask_only_test.fits",
+    r"C:\Users\adegr\OneDrive\Escritorio\Bibliografía Magister\Investigacion_LMC\NMoIR_ratio_13CO21_12CO21_13mask_only_test2.fits",
     ratio,
     header,
     overwrite=True)
@@ -150,7 +150,8 @@ mask = (data13 > 3*rms_mom0) & np.isfinite(data13) & np.isfinite(data12) & (data
 mask = (
     (data13 > 3*rms_rebin) &
     np.isfinite(data12) &
-    np.isfinite(data13)
+    np.isfinite(data13) & 
+    (data12 > 3*rms_mom0)
 )
 
 
