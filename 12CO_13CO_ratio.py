@@ -17,7 +17,7 @@ valor_negativo = -1e6
 noise_region = data13[846:902,317:440]
 rms_mom0 = np.nanstd(noise_region)
 
-#Aplicamos una mascara
+# Aplicamos una mascara
 mask =  np.isfinite(data13) & (data13 > 0) #& (data12 > 0) & np.isfinite(data12)
 mask = (data13 > 3*rms_mom0) & np.isfinite(data13) & np.isfinite(data12) & (data12 > 3*rms_mom0)  & (data12 > 0)
 ratio = np.where(mask, data13/data12, valor_negativo)
@@ -70,7 +70,7 @@ print(np.nanmin(ratio))
 print(np.nanmax(ratio))
 
 fits.writeto(
-    r"C:\Users\adegr\OneDrive\Escritorio\Bibliografía Magister\Investigacion_LMC\NMoIR_ratio_13CO21_12CO21_13mask_only_test2.fits",
+    r"C:\Users\adegr\OneDrive\Escritorio\Bibliografía Magister\Investigacion_LMC\NMoIR_ratio_13CO21_12CO21_13mask_only_test.fits",
     ratio,
     header,
     overwrite=True)
@@ -164,9 +164,9 @@ plt.figure(figsize=(6,6))
 
 plt.scatter(co12, co13, s=1, alpha=0.3)
 
-plt.xlabel("Intensidad 12CO(2-1) [K km s-1]")
-plt.ylabel("Intensidad 13CO(2-1) [K km s-1]")
-plt.title("Intensidad 13CO(2-1) vs  Intensidad 12CO(2-1)")
+plt.xlabel("Integrated Intensity 12CO(2-1) [K km s-1]")
+plt.ylabel("Integrated Intensity 13CO(2-1) [K km s-1]")
+plt.title("I[13CO(2-1)] vs  I[12CO(2-1)]")
 
 # límites de ejes
 plt.xlim(-0.5, np.max(co12))
@@ -202,8 +202,9 @@ plt.plot(
 )
 
 plt.legend()
-plt.xlabel("Intensidad 12CO(2-1) [K km s$^{-1}$]")
-plt.ylabel("Intensidad 13CO(2-1) [K km s$^{-1}$]")
+plt.xlabel("Integrated Intensity 12CO(2-1) [K km s-1]")
+plt.ylabel("Integrated Intensity 13CO(2-1) [K km s-1]")
+plt.title("I[13CO(2-1)] vs  I[12CO(2-1)]")
 plt.grid(alpha=0.5)
 plt.show()
 
@@ -287,12 +288,9 @@ plt.scatter(
     label='N158'
 )
 
-plt.xlabel("Intensidad 12CO(2-1) [K km s$^{-1}$]")
-plt.ylabel("Intensidad 13CO(2-1) [K km s$^{-1}$]")
-
-plt.title(
-    "Intensidad 13CO(2-1) vs 12CO(2-1)"
-)
+plt.xlabel("Integrated Intensity 12CO(2-1) [K km s-1]")
+plt.ylabel("Integrated Intensity 13CO(2-1) [K km s-1]")
+plt.title("I[13CO(2-1)] vs  I[12CO(2-1)]")
 
 plt.legend()
 
@@ -732,17 +730,9 @@ plt.plot(
 # ETIQUETAS
 # ============================================================
 
-plt.xlabel(
-    "Intensidad 12CO(2-1) [K km s$^{-1}$]"
-)
-
-plt.ylabel(
-    "Intensidad 13CO(2-1) [K km s$^{-1}$]"
-)
-
-plt.title(
-    "Intensidad 13CO(2-1) vs 12CO(2-1)"
-)
+plt.xlabel("Integrated Intensity 12CO(2-1) [K km s-1]")
+plt.ylabel("Integrated Intensity 13CO(2-1) [K km s-1]")
+plt.title("I[13CO(2-1)] vs  I[12CO(2-1)]")
 
 plt.legend(
     fontsize=8

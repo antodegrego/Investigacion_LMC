@@ -814,7 +814,7 @@ plt.ylabel(
 )
 
 plt.title(
-    "Peak Temperature: 13CO(2-1) vs 12CO(2-1)"
+    "T_peak[13CO(2-1)] vs T_peak[12CO(2-1)]"
 )
 
 plt.legend(
