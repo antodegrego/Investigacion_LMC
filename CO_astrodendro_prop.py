@@ -7,7 +7,7 @@ from astropy.stats import mad_std
 from astrodendro.analysis import ppv_catalog
 
 
-filename = 'NMolR_aca_12CO21_K_cube.fits'
+filename = 'NMolR_aca_13CO21_K_cube.fits'
 
 with fits.open(filename) as hdul:
     data = hdul[0].data
@@ -90,8 +90,11 @@ metadata['spatial_scale'] = pix_x.to(u.arcsec)
 metadata['beam_major'] = bmaj.to(u.arcsec)
 metadata['beam_minor'] = bmin.to(u.arcsec)
 
+frec13CO = 220.3986842
+frec12CO = 230.538
+
 metadata['wavelength'] = (
-    230.538 * u.GHz
+    frec13CO * u.GHz
 ).to(u.m, equivalencies=u.spectral())
 
 # WCS original
@@ -133,11 +136,11 @@ cat[
 ].pprint(max_lines=30)
 
 # Guardar dendrograma
-d.save_to('dendrogram_12CO.fits')
+d.save_to('dendrogram_13CO.fits')
 
 # Guardar catálogo
 cat.write(
-    'catalog_12CO.fits',
+    'catalog_13CO.fits',
     overwrite=True
 )
 
