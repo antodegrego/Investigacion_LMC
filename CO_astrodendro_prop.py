@@ -9,7 +9,7 @@ from astrodendro.analysis import ppv_catalog
 
 filename = 'NMolR_aca_12CO21_K_cube.fits'
 
-with fits.open(r"C:\Users\adegr\OneDrive\Escritorio\Bibliografía Magister\Investigacion_LMC\NMolR_aca_12CO21_K_cube.fits") as hdul:
+with fits.open(filename) as hdul:
     data = hdul[0].data
     header = hdul[0].header
 
