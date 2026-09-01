@@ -131,3 +131,15 @@ cat[
     'minor_sigma',
     'position_angle'
 ].pprint(max_lines=30)
+
+# Guardar dendrograma
+d.save_to('dendrogram_12CO.fits')
+
+# Guardar catálogo
+cat.write(
+    'catalog_12CO.fits',
+    overwrite=True
+)
+
+print("Dendrograma guardado")
+print("Catálogo guardado")
