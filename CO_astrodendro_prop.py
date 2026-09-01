@@ -71,6 +71,16 @@ def structure_type(s):
     else:
         return 'branch'
 
+print("NAXIS =", header['NAXIS'])
+
+for i in range(1, header['NAXIS'] + 1):
+    print(
+        i,
+        header.get(f'NAXIS{i}'),
+        header.get(f'CTYPE{i}'),
+        header.get(f'CUNIT{i}')
+    )
+
 metadata = {}
 
 metadata['data_unit'] = u.K
@@ -81,10 +91,18 @@ metadata['beam_major'] = bmaj.to(u.arcsec)
 metadata['beam_minor'] = bmin.to(u.arcsec)
 
 metadata['wavelength'] = (
-    220.3986842 * u.GHz
+    230.538 * u.GHz
 ).to(u.m, equivalencies=u.spectral())
 
-metadata['wcs'] = WCS(header)
+# WCS original
+wcs = WCS(header)
+
+# Eliminar eje STOKES espurio
+wcs = wcs.dropaxis(3)
+
+metadata['wcs'] = wcs
+
+print(metadata['wcs'])
 
 metadata['vaxis'] = 0
 
