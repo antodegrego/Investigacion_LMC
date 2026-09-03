@@ -95,11 +95,11 @@ print(
 # Multiplicadores de RMS
 
 levels_xrms_12 = np.array([
-    3, 6, 9, 12
+    3, 6, 108, 151
 ])
 
 levels_xrms_13 = np.array([
-    3, 6, 9, 12
+    3, 6, 24, 36
 ])
 
 
