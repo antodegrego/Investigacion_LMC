@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from astrodendro import Dendrogram
+from scipy.stats import linregress
 
 
 # ============================================================
@@ -12,67 +12,41 @@ from astrodendro import Dendrogram
 # Distancia a la LMC
 D_pc = 50000.0
 
+# Resolución de la imagen
+# BMAJ = BMIN = 7 arcsec
+resolution_arcsec = 7.0
+
+
+# ============================================================
+# CONVERTIR RESOLUCIÓN A pc
+# ============================================================
+
+resolution_pc = (
+    resolution_arcsec / 206265.0
+) * D_pc
+
+print("Resolución angular:", resolution_arcsec, "arcsec")
+print("Resolución espacial:", resolution_pc, "pc")
+
 
 # ============================================================
 # LEER CATÁLOGOS
 # ============================================================
 
-# Catálogo CPROPS
+# CPROPS
 cprops = pd.read_csv(
     r"C:\Users\adegr\OneDrive\Escritorio\Bibliografía Magister\Investigacion_LMC\NMoIR_12CO21_mask13CO_corrected.props.csv"
 )
 
-# Catálogo Astrodendro
+# Astrodendro
 astro = pd.read_csv(
     r"C:\Users\adegr\OneDrive\Escritorio\Bibliografía Magister\Investigacion_LMC\catalog_12CO_resolved.csv"
 )
 
 
-print("Columnas CPROPS:")
-print(cprops.columns.tolist())
-
-print("\nColumnas Astrodendro:")
-print(astro.columns.tolist())
-
-
-print("\nNúmero de estructuras CPROPS:", len(cprops))
-print("Número de estructuras Astrodendro:", len(astro))
-
-
-# ============================================================
-# CARGAR DENDROGRAMA
-# ============================================================
-
-d = Dendrogram.load_from(
-    r"C:\Users\adegr\OneDrive\Escritorio\Bibliografía Magister\Investigacion_LMC\dendrogram_12CO.fits"
-)
-
-
-# ============================================================
-# IDENTIFICAR TIPO DE ESTRUCTURA ASTRODENDRO
-# ============================================================
-
-structure_types = []
-
-for idx in astro['_idx']:
-
-    s = d[int(idx)]
-
-    if s.is_leaf:
-        structure_types.append('leaf')
-
-    elif s.parent is None:
-        structure_types.append('trunk')
-
-    else:
-        structure_types.append('branch')
-
-
-astro['structure_type'] = structure_types
-
-
-print("\nEstructuras Astrodendro por tipo:")
-print(astro['structure_type'].value_counts())
+print("\nNúmero inicial de estructuras:")
+print("CPROPS:", len(cprops))
+print("Astrodendro:", len(astro))
 
 
 # ============================================================
@@ -80,60 +54,213 @@ print(astro['structure_type'].value_counts())
 # arcsec -> pc
 # ============================================================
 
-# radius está en arcsec.
-#
-# R_pc = theta_rad * D_pc
-#
-# theta_rad = radius_arcsec / 206265
-
 astro['radius_pc'] = (
     astro['radius'] / 206265.0
 ) * D_pc
 
 
 # ============================================================
-# LIMPIAR VALORES NO FINITOS
+# ELIMINAR VALORES NO FINITOS
 # ============================================================
 
-# CPROPS
 cprops = cprops[
     np.isfinite(cprops['RAD_PC']) &
     np.isfinite(cprops['SIGV_KMS'])
 ].copy()
 
 
-# Astrodendro
 astro = astro[
     np.isfinite(astro['radius_pc']) &
     np.isfinite(astro['v_rms'])
 ].copy()
 
 
-print("\nDespués de eliminar valores NaN:")
-print("CPROPS:", len(cprops))
-print("Astrodendro:", len(astro))
+# ============================================================
+# ELIMINAR ESTRUCTURAS NO RESUELTAS
+# ============================================================
+
+# CPROPS
+
+n_cprops_before = len(cprops)
+
+cprops = cprops[
+    cprops['RAD_PC'] >= resolution_pc
+].copy()
+
+n_cprops_removed = (
+    n_cprops_before - len(cprops)
+)
+
+
+# Astrodendro
+
+n_astro_before = len(astro)
+
+astro = astro[
+    astro['radius_pc'] >= resolution_pc
+].copy()
+
+n_astro_removed = (
+    n_astro_before - len(astro)
+)
+
+
+print("\nEstructuras eliminadas por ser menores que la resolución:")
+
+print(
+    "CPROPS:",
+    n_cprops_removed
+)
+
+print(
+    "Astrodendro:",
+    n_astro_removed
+)
+
+
+print("\nEstructuras restantes:")
+
+print(
+    "CPROPS:",
+    len(cprops)
+)
+
+print(
+    "Astrodendro:",
+    len(astro)
+)
 
 
 # ============================================================
-# SEPARAR ASTRODENDRO POR TIPO
+# FUNCIÓN PARA AJUSTE DE LEY DE POTENCIA
 # ============================================================
 
-leaves = astro[
-    astro['structure_type'] == 'leaf'
-]
+def power_law_fit(x, y):
 
-branches = astro[
-    astro['structure_type'] == 'branch'
-]
+    # El ajuste se realiza en espacio logarítmico
 
-trunks = astro[
-    astro['structure_type'] == 'trunk'
-]
+    log_x = np.log10(x)
+    log_y = np.log10(y)
+
+    fit = linregress(
+        log_x,
+        log_y
+    )
+
+    alpha = fit.slope
+    log_A = fit.intercept
+
+    A = 10**log_A
+
+    r_value = fit.rvalue
+
+    r_squared = r_value**2
+
+    return A, alpha, r_squared
 
 
-print("\nNúmero de leaves:", len(leaves))
-print("Número de branches:", len(branches))
-print("Número de trunks:", len(trunks))
+# ============================================================
+# DATOS PARA LOS FITEOS
+# ============================================================
+
+x_cprops = cprops['RAD_PC'].values
+y_cprops = cprops['SIGV_KMS'].values
+
+x_astro = astro['radius_pc'].values
+y_astro = astro['v_rms'].values
+
+
+# ============================================================
+# FITEO CPROPS
+# ============================================================
+
+A_cprops, alpha_cprops, r2_cprops = power_law_fit(
+    x_cprops,
+    y_cprops
+)
+
+
+print("\n==============================")
+print("FIT CPROPS")
+print("==============================")
+
+print(
+    f"sigma_v = {A_cprops:.3f} * R^{alpha_cprops:.3f}"
+)
+
+print(
+    f"alpha = {alpha_cprops:.3f}"
+)
+
+print(
+    f"R² = {r2_cprops:.3f}"
+)
+
+
+# ============================================================
+# FITEO ASTRODENDRO
+# ============================================================
+
+A_astro, alpha_astro, r2_astro = power_law_fit(
+    x_astro,
+    y_astro
+)
+
+
+print("\n==============================")
+print("FIT ASTRODENDRO")
+print("==============================")
+
+print(
+    f"sigma_v = {A_astro:.3f} * R^{alpha_astro:.3f}"
+)
+
+print(
+    f"alpha = {alpha_astro:.3f}"
+)
+
+print(
+    f"R² = {r2_astro:.3f}"
+)
+
+
+# ============================================================
+# GENERAR CURVAS DE FIT
+# ============================================================
+
+# Rango de radios
+
+R_min = min(
+    x_cprops.min(),
+    x_astro.min()
+)
+
+R_max = max(
+    x_cprops.max(),
+    x_astro.max()
+)
+
+R_fit = np.logspace(
+    np.log10(R_min),
+    np.log10(R_max),
+    200
+)
+
+
+# CPROPS
+
+sigma_fit_cprops = (
+    A_cprops *
+    R_fit**alpha_cprops
+)
+
+
+# Astrodendro
+
+sigma_fit_astro = (
+    A_astro *
+    R_fit**alpha_astro
+)
 
 
 # ============================================================
@@ -150,8 +277,8 @@ fig, ax = plt.subplots(
 # ============================================================
 
 ax.scatter(
-    cprops['RAD_PC'],
-    cprops['SIGV_KMS'],
+    x_cprops,
+    y_cprops,
     marker='o',
     s=45,
     alpha=0.6,
@@ -161,52 +288,77 @@ ax.scatter(
 
 
 # ============================================================
-# ASTRODENDRO - LEAVES
+# ASTRODENDRO
 # ============================================================
 
 ax.scatter(
-    leaves['radius_pc'],
-    leaves['v_rms'],
+    x_astro,
+    y_astro,
     marker='o',
     s=45,
     alpha=0.6,
     color='tab:orange',
-    label='Astrodendro - Leaves'
+    label='Astrodendro'
 )
 
 
 # ============================================================
-# ASTRODENDRO - BRANCHES
+# FIT CPROPS
 # ============================================================
 
-ax.scatter(
-    branches['radius_pc'],
-    branches['v_rms'],
-    marker='^',
-    s=55,
-    alpha=0.6,
+ax.plot(
+    R_fit,
+    sigma_fit_cprops,
+    color='tab:blue',
+    linewidth=2,
+    label=(
+        rf'CPROPS fit: '
+        rf'$\sigma_v \propto R^{{{alpha_cprops:.2f}}}$'
+    )
+)
+
+
+# ============================================================
+# FIT ASTRODENDRO
+# ============================================================
+
+ax.plot(
+    R_fit,
+    sigma_fit_astro,
     color='tab:orange',
-    label='Astrodendro - Branches'
+    linewidth=2,
+    label=(
+        rf'Astrodendro fit: '
+        rf'$\sigma_v \propto R^{{{alpha_astro:.2f}}}$'
+    )
 )
 
 
 # ============================================================
-# ASTRODENDRO - TRUNKS
+# ESCALA LOGARÍTMICA
 # ============================================================
 
-ax.scatter(
-    trunks['radius_pc'],
-    trunks['v_rms'],
-    marker='s',
-    s=55,
-    alpha=0.6,
-    color='tab:orange',
-    label='Astrodendro - Trunks'
+ax.set_xscale('log')
+ax.set_yscale('log')
+
+
+# ============================================================
+# RESOLUCIÓN
+# ============================================================
+
+ax.axvline(
+    resolution_pc,
+    linestyle='--',
+    color='gray',
+    alpha=0.7,
+    label=(
+        rf'Resolution = {resolution_pc:.2f} pc'
+    )
 )
 
 
 # ============================================================
-# FORMATO DEL GRÁFICO
+# ETIQUETAS
 # ============================================================
 
 ax.set_xlabel(
@@ -217,12 +369,17 @@ ax.set_ylabel(
     r'$\sigma_v$ [km s$^{-1}$]'
 )
 
+
 ax.legend()
 
 ax.grid(
-    alpha=0.2
+    alpha=0.2,
+    which='both'
 )
+
 
 plt.tight_layout()
 
 plt.show()
+
+
